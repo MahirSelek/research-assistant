@@ -67,12 +67,8 @@ try:
     # 2. Convert the AttrDict to a standard Python dictionary.
     GOOGLE_CREDENTIALS_DICT = dict(gcp_service_account_secret)
     
-    # 3. Write the standard dictionary to a temporary file.
-    with open("gcp_credentials.json", "w") as f:
-        json.dump(GOOGLE_CREDENTIALS_DICT, f)
-        
-    # 4. Set the environment variable for Google Cloud libraries to find the file.
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp_credentials.json"
+    # 3. Set credentials directly as environment variable (more secure for deployment)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = json.dumps(GOOGLE_CREDENTIALS_DICT)
 
 except KeyError as e:
     st.error(f"Missing secret configuration for key: '{e}'. Please check that your .streamlit/secrets.toml file (for local development) or your Streamlit Cloud secrets match the required structure.")

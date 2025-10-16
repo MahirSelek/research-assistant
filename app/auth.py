@@ -25,13 +25,8 @@ class AuthenticationManager:
             self.max_login_attempts = 5
             self.lockout_duration = 300  # 5 minutes in seconds
             
-            # Wait for credentials to be set up (same as main.py)
-            import time
-            max_retries = 10
-            for i in range(max_retries):
-                if os.path.exists("gcp_credentials.json"):
-                    break
-                time.sleep(0.5)
+            # Credentials are now set up via environment variables in main.py
+            # No need to wait for file creation
             
             # Test GCS connection
             try:
