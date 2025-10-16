@@ -12,6 +12,7 @@ credentials.json
 # Keep specific JSON files that are not credentials
 !app/literature-review.json
 !config/config.yaml.example
+app/literature-review.json
 
 # Python
 __pycache__/
