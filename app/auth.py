@@ -376,19 +376,6 @@ class FallbackAuthenticationManager:
         self.lockout_duration = 300
         
         # Initialize persistent storage
-        if 'persistent_users' not in st.session_state:
-            st.session_state.persistent_users = {
-                "admin": {
-                    "password_hash": "fallback", 
-                    "salt": "fallback", 
-                    "role": "admin",
-                    "created_at": time.time(),
-                    "last_login": None,
-                    "login_attempts": 0,
-                    "locked_until": None
-                }
-            }
-        
         if 'persistent_user_data' not in st.session_state:
             st.session_state.persistent_user_data = {}
             
@@ -470,11 +457,13 @@ class FallbackAuthenticationManager:
         is_valid, message = self.validate_password_strength(password)
         if not is_valid:
             return False, message
-        if username in self.users:
+        
+        users = self.load_users()
+        if username in users:
             return False, "Username already exists"
         
         hashed_password, salt = self.hash_password(password)
-        self.users[username] = {
+        users[username] = {
             "password_hash": hashed_password,
             "salt": salt,
             "role": "user",
@@ -483,14 +472,15 @@ class FallbackAuthenticationManager:
             "login_attempts": 0,
             "locked_until": None
         }
-        self.save_users(self.users)
+        self.save_users(users)
         return True, "User created successfully"
     
     def authenticate_user(self, username: str, password: str) -> Tuple[bool, str]:
-        if username not in self.users:
+        users = self.load_users()
+        if username not in users:
             return False, "Invalid username or password"
         
-        user = self.users[username]
+        user = users[username]
         current_time = time.time()
         
         # Check if account is locked
@@ -504,7 +494,7 @@ class FallbackAuthenticationManager:
             user['last_login'] = current_time
             user['login_attempts'] = 0
             user['locked_until'] = None
-            self.save_users(self.users)
+            self.save_users(users)
             return True, "Login successful"
         
         # Verify password for regular users
@@ -515,22 +505,34 @@ class FallbackAuthenticationManager:
             # Lock account if too many attempts
             if user['login_attempts'] >= self.max_login_attempts:
                 user['locked_until'] = current_time + self.lockout_duration
-                self.save_users(self.users)
+                self.save_users(users)
                 return False, f"Too many failed attempts. Account locked for {self.lockout_duration // 60} minutes."
             
-            self.save_users(self.users)
+            self.save_users(users)
             return False, "Invalid username or password"
         
         # Successful login - reset attempts and update last login
         user['login_attempts'] = 0
         user['locked_until'] = None
         user['last_login'] = current_time
-        self.save_users(self.users)
+        self.save_users(users)
         
         return True, "Login successful"
     
     def load_users(self) -> Dict:
         """Load users from persistent storage"""
+        if 'persistent_users' not in st.session_state:
+            st.session_state.persistent_users = {
+                "admin": {
+                    "password_hash": "fallback", 
+                    "salt": "fallback", 
+                    "role": "admin",
+                    "created_at": time.time(),
+                    "last_login": None,
+                    "login_attempts": 0,
+                    "locked_until": None
+                }
+            }
         return st.session_state.persistent_users
     
     def save_users(self, users: Dict):
